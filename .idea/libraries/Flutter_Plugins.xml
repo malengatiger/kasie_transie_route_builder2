@@ -14,7 +14,6 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/camera_web-0.3.2+1" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/file_selector_windows-0.9.3" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/realm-1.4.0" />
-      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/geolocator-9.0.2" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/path_provider_windows-2.2.0" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/mobile_number-2.1.1" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_messaging-14.6.6" />
@@ -55,6 +54,7 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/sqflite-2.3.0" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/camera_avfoundation-0.9.13+3" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/firebase_core-2.15.1" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/geolocator-10.0.0" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/desktop_webview_auth-0.0.13" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/url_launcher_android-6.0.38" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/image_picker-1.0.2" />
@@ -77,6 +77,8 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/shared_preferences-2.2.0" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/path_provider_android-2.1.0" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/url_launcher_windows-3.0.7" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/smart_auth-1.1.1" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/flutter_sim_country_code-0.1.2" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

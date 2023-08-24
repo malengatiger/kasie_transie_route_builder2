@@ -1,8 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="kasie_transie_route_builder2"
+        android:label="RouteBuilder"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="com.google.android.geo.API_KEY"
+                   android:value="AIzaSyAppCGKY2IfL3R1lSyoUKXrdU7yUj5weMc"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

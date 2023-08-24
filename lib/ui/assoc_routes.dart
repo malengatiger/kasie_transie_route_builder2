@@ -73,7 +73,6 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
 
   Future<void> initialize() async {
     fcmBloc.subscribeForRouteBuilder('RouteBuilder');
-
   }
 
   void _listen() {
@@ -91,7 +90,7 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
       if (mounted) {
         showSnackBar(
             message:
-            "A Route update has been issued. The download will happen automatically.",
+                "A Route update has been issued. The download will happen automatically.",
             context: context);
       }
     });
@@ -155,7 +154,6 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
       selectedRouteId = route.routeId;
     });
 
-
     if (mounted) {
       //route = await listApiDog.
       navigateWithScale(
@@ -189,29 +187,56 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
   }
 
   void navigateToAssocMaps() {
-    navigateWithScale(
-        const AssociationRouteMaps(),
-        context);
+    navigateWithScale(const AssociationRouteMaps(), context);
   }
 
   void navigateToRouteInfo(lib.Route route) {
     navigateWithScale(
         RouteInfoWidget(
-            routeId: route.routeId, onClose: () {
+            routeId: route.routeId,
+            onClose: () {
               Navigator.of(context).pop();
-        }, onNavigateToMapViewer: () {
-          navigateToMapViewer(selectedRoute!);
-        }),
+            },
+            onNavigateToMapViewer: () {
+              navigateToMapViewer(selectedRoute!);
+            }, onColorChanged: (color , string ) {
+              _sendColorChange(color, string);
+        },),
         context);
+  }
+  
+  void _sendColorChange(Color color, stringColor) async {
+    pp('$mm ................... send color change to : $stringColor');
+    setState(() {
+      busy = true;
+    });
+    try {
+      selectedRoute = await dataApiDog.updateRouteColor(routeId: selectedRoute!.routeId!, color: stringColor);
+    } catch (e) {
+      pp(e);
+      if (mounted) {
+        showSnackBar(message: 'Colour update failed\n$e', context: context);
+      }
+    }
+    setState(() {
+      busy = false;
+    });
+  }
+
+  void _navigateToCityCreator() {
+    navigateWithScale(const CityCreatorMap(), context);
   }
 
   void _refresh(bool refresh) async {
     setState(() {
       busy = true;
     });
+    user = await prefs.getUser();
+    if (user != null) {
     routes = await listApiDog
         .getRoutes(AssociationParameter(user!.associationId!, refresh));
-    routesIsolate.getRoutes(user!.associationId!);
+    }
+
     setState(() {
       busy = false;
     });
@@ -244,13 +269,15 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
       pp('$mm onSendRouteUpdateMessage happened OK! ${E.nice}');
     } catch (e) {
       pp(e);
-      showToast(
-          duration: const Duration(seconds: 5),
-          padding: 20,
-          textStyle: myTextStyleMedium(context),
-          backgroundColor: Colors.amber,
-          message: 'Route Update message sent OK',
-          context: context);
+      if (mounted) {
+        showToast(
+                  duration: const Duration(seconds: 5),
+                  padding: 20,
+                  textStyle: myTextStyleMedium(context),
+                  backgroundColor: Colors.amber,
+                  message: 'Route Update message sent OK',
+                  context: context);
+      };
     }
     setState(() {
       sendingRouteUpdateMessage = false;
@@ -268,7 +295,7 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
         busy = true;
       });
       final dist = await routeDistanceCalculator.calculateRouteDistances(
-              route.routeId!, route.associationId!);
+          route.routeId!, route.associationId!);
       pp('$mm ... distances calculated: ${dist.length}, are we mounted? $mounted');
       if (mounted) {
         showToast(
@@ -276,10 +303,11 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
             textStyle: myTextStyleSmallWithColor(context, Colors.white),
             padding: 20.0,
             duration: const Duration(seconds: 2),
-            message: 'Distances calculated', context: context);
+            message: 'Distances calculated',
+            context: context);
         if (type == 'phone') {
           navigateToRouteInfo(route);
-        }  
+        }
       }
     } catch (e) {
       pp(e);
@@ -320,32 +348,51 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                 ],
               )),
           actions: [
-
-            IconButton(
-                onPressed: () async {
-                  pp('$mm navigateToAssocMaps .......');
-                  navigateToAssocMaps();
-                },
-                icon:  Icon(Icons.map, color: Theme.of(context).primaryColor,)),
             IconButton(
                 onPressed: () async {
                   pp('$mm refresh routes from backend .......');
                   selectedRoute = null;
                   _refresh(true);
                 },
-                icon:  Icon(Icons.refresh,color: Theme.of(context).primaryColor,)),
-
+                icon: Icon(
+                  Icons.refresh,
+                  color: Theme.of(context).primaryColor,
+                )),
+            IconButton(
+                onPressed: () async {
+                  pp('$mm navigateToAssocMaps .......');
+                  navigateToAssocMaps();
+                },
+                icon: Icon(
+                  Icons.map,
+                  color: Theme.of(context).primaryColor,
+                )),
+            IconButton(
+                onPressed: () async {
+                  _navigateToCityCreator();
+                },
+                icon: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).primaryColor,
+                )),
             IconButton(
                 onPressed: () async {
                   if (mounted) {
                     if (association != null) {
-                    navigateWithScale(
-                        RouteEditor(dataApiDog: dataApiDog, prefs: prefs, association: association!,),
-                                          context);
+                      navigateWithScale(
+                          RouteEditor(
+                            dataApiDog: dataApiDog,
+                            prefs: prefs,
+                            association: association!,
+                          ),
+                          context);
                     }
                   }
                 },
-                icon:  Icon(Icons.add,color: Theme.of(context).primaryColor,)),
+                icon: Icon(
+                  Icons.add,
+                  color: Theme.of(context).primaryColor,
+                )),
           ],
         ),
         body: Stack(
@@ -414,6 +461,9 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                                       child: RouteInfoWidget(
                                         routeId: selectedRouteId,
                                         onClose: () {},
+                                        onColorChanged: (color , string ) {
+                                          _sendColorChange(color, string);
+                                        },
                                         onNavigateToMapViewer: () {
                                           navigateToMapViewer(selectedRoute!);
                                         },
@@ -454,7 +504,9 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                                         onClose: () {},
                                         onNavigateToMapViewer: () {
                                           navigateToMapViewer(selectedRoute!);
-                                        },
+                                        }, onColorChanged: (color , string ) { 
+                                          _sendColorChange(color, string);
+                                      },
                                       ),
                                     ),
                                   ],
@@ -534,9 +586,13 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                         style: myTextStyleSmall(context)),
                     onTap: () {
                       if (association != null) {
-                      navigateWithScale(
-                          RouteEditor(dataApiDog: dataApiDog, prefs: prefs, association: association!,),
-                          context);
+                        navigateWithScale(
+                            RouteEditor(
+                              dataApiDog: dataApiDog,
+                              prefs: prefs,
+                              association: association!,
+                            ),
+                            context);
                       }
                     },
                   ),

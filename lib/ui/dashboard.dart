@@ -20,6 +20,7 @@ import 'package:kasie_transie_library/utils/functions.dart';
 import 'package:kasie_transie_library/utils/navigator_utils.dart';
 import 'package:kasie_transie_library/utils/prefs.dart';
 import 'package:kasie_transie_library/utils/route_distance_calculator.dart';
+import 'package:kasie_transie_library/utils/zip_handler.dart';
 import 'package:kasie_transie_library/widgets/auth/cell_auth_signin.dart';
 import 'package:kasie_transie_library/widgets/dash_widgets/generic.dart';
 import 'package:kasie_transie_library/widgets/language_and_color_chooser.dart';
@@ -41,7 +42,7 @@ class Dashboard extends ConsumerStatefulWidget {
 class DashboardState extends ConsumerState<Dashboard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  static const mm = '😡😡😡😡Ambassador Dashboard: 💪 ';
+  static const mm = '😡😡😡😡RouteBuilder Dashboard: 💪 ';
 
   lib.User? user;
   var cars = <lib.Vehicle>[];
@@ -54,8 +55,6 @@ class DashboardState extends ConsumerState<Dashboard>
   var totalPassengers = 0;
   late StreamSubscription<lib.RouteUpdateRequest> _routeUpdateSubscription;
 
-  bool _showVerifier = false;
-  bool _showDashboard = false;
   int routePointsTotal = 0;
   String? dispatchWithScan,
       manualDispatch,
@@ -116,16 +115,9 @@ class DashboardState extends ConsumerState<Dashboard>
     user = await prefs.getUser();
     association = await prefs.getAssociation();
     if (user == null) {
-      setState(() {
-        _showVerifier = true;
-        _showDashboard = false;
-      });
+      _navigateToPhoneAuth();
       return;
     }
-    setState(() {
-      _showVerifier = false;
-      _showDashboard = true;
-    });
     fcmBloc.subscribeForRouteBuilder('RouteBuilder');
     _getData(false);
   }
@@ -150,7 +142,7 @@ class DashboardState extends ConsumerState<Dashboard>
   int citiesTotal = 0;
 
   Future _getData(bool refresh) async {
-    pp('$mm ................... get data for ambassador dashboard ...');
+    pp('$mm ................... get data for ambassador dashboard ... refresh: $refresh');
     user = await prefs.getUser();
     setState(() {
       busy = true;
@@ -158,8 +150,6 @@ class DashboardState extends ConsumerState<Dashboard>
     try {
       if (user != null) {
         await _getRoutes(refresh);
-        await _getLandmarks(refresh);
-        await _countRoutePoints();
         citiesTotal =
             await listApiDog.countCountryCities(user!.countryId!, false);
       }
@@ -180,12 +170,19 @@ class DashboardState extends ConsumerState<Dashboard>
   }
 
   Future _getRoutes(bool refresh) async {
-    pp('$mm ... ambassador dashboard; getting routes: ${routes.length} ...');
+    pp('$mm ... ambassador dashboard; getting routes ... refresh: $refresh');
 
-    routes = await listApiDog
-        .getRoutes(AssociationParameter(user!.associationId!, refresh));
     if (refresh) {
-      routesIsolate.getRoutes(user!.associationId!);
+      final bags = await zipHandler.getRouteBags(associationId: user!.associationId!);
+      for (var bag in bags!.routeBags) {
+        routes.add(bag.route!);
+      }
+    } else {
+      routes = await listApiDog
+          .getRoutes(AssociationParameter(user!.associationId!, refresh));
+      pp('$mm ... ambassador dashboard; routes found by listApiDog: ${routes.length} ...');
+      await _getLandmarks(refresh);
+      await _countRoutePoints();
     }
     pp('$mm ... ambassador dashboard; routes: ${routes.length} ...');
   }
@@ -357,6 +354,20 @@ class DashboardState extends ConsumerState<Dashboard>
     navigateWithScale(const CityCreatorMap(), context);
   }
 
+  Future<void> _navigateToPhoneAuth() async {
+    pp('$mm ............... _navigateToPhoneAuth');
+
+    user = await navigateWithScale( CustomPhoneVerification(
+        onUserAuthenticated: (mUser){}, onError: (){},
+        onCancel: (){}, onLanguageChosen: (lang){}), context);
+
+    if (user != null) {
+      pp('$mm ............... back from _navigateToPhoneAuth with user: ${user!.name}');
+      _getData(false);
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final type = getThisDeviceType();
@@ -365,7 +376,7 @@ class DashboardState extends ConsumerState<Dashboard>
     var centerTitle = true;
     if (type == 'phone') {
       padding = 12.0;
-      fontSize = 16;
+      fontSize = 24;
       centerTitle = false;
     }
     return SafeArea(
@@ -379,46 +390,38 @@ class DashboardState extends ConsumerState<Dashboard>
                 context, Theme.of(context).primaryColor, fontSize),
           ),
           actions: [
-            _showDashboard
-                ? IconButton(
+             IconButton(
                 onPressed: () {
                   _navigateToCityCreator();
                 },
                 icon: Icon(
                   Icons.edit,
                   color: Theme.of(context).primaryColor,
-                ))
-                : const SizedBox(),
-            _showDashboard
-                ? IconButton(
+                )),
+           IconButton(
                     onPressed: () {
                       _navigateToColor();
                     },
                     icon: Icon(
                       Icons.color_lens,
                       color: Theme.of(context).primaryColor,
-                    ))
-                : const SizedBox(),
-            _showDashboard
-                ? IconButton(
+                    )),
+             IconButton(
                     onPressed: () {
                       _getData(true);
                     },
                     icon: Icon(
                       Icons.refresh,
                       color: Theme.of(context).primaryColor,
-                    ))
-                : const SizedBox(),
-            _showDashboard
-                ? IconButton(
+                    )),
+            IconButton(
                     onPressed: () {
                       navigateToRoutes();
                     },
                     icon: Icon(
                       Icons.route,
                       color: Theme.of(context).primaryColor,
-                    ))
-                : const SizedBox(),
+                    )),
           ],
         ),
         body: Stack(
@@ -427,8 +430,7 @@ class DashboardState extends ConsumerState<Dashboard>
               mobile: (ctx) {
                 return Stack(
                   children: [
-                    _showDashboard
-                        ? DashContent(
+                    user == null? gapW16: DashContent(
                             user: user!,
                             routesText: routesText!,
                             workWithRoutes: workWithRoutes!,
@@ -444,33 +446,14 @@ class DashboardState extends ConsumerState<Dashboard>
                             },
                             citiesText: citiesText!,
                             citiesTotal: citiesTotal,
-                          )
-                        : const SizedBox(),
-                    _showVerifier
-                        ? CustomPhoneVerification(
-                            onUserAuthenticated: (u) {
-                              setState(() {
-                                user = u;
-                                _showVerifier = false;
-                                _showDashboard = true;
-                              });
-                              _getData(true);
-                            },
-                            onError: () {},
-                            onCancel: () {},
-                            onLanguageChosen: () {
-                              _setTexts();
-                            },
-                          )
-                        : const SizedBox(),
+                          ),
                   ],
                 );
               },
               tablet: (ctx) {
                 return OrientationLayoutBuilder(landscape: (ctx) {
                   final width = MediaQuery.of(context).size.width;
-                  return _showDashboard
-                      ? Row(
+                  return  user == null? gapW16: Row(
                           children: [
                             SizedBox(
                               width: (width / 2) + 60,
@@ -516,32 +499,11 @@ class DashboardState extends ConsumerState<Dashboard>
                               ),
                             ),
                           ],
-                        )
-                      : Center(
-                          child: SizedBox(
-                            width: 600,
-                            height: 600,
-                            child: CustomPhoneVerification(
-                              onUserAuthenticated: (u) {
-                                setState(() {
-                                  user = u;
-                                  _showVerifier = false;
-                                  _showDashboard = true;
-                                });
-                                _getData(false);
-                              },
-                              onError: () {},
-                              onCancel: () {},
-                              onLanguageChosen: () {
-                                _setTexts();
-                              },
-                            ),
-                          ),
                         );
+
                 }, portrait: (ctx) {
                   final width = MediaQuery.of(context).size.width;
-                  return _showDashboard
-                      ? Row(
+                  return  user == null? gapW16: Row(
                           children: [
                             SizedBox(
                               width: (width / 2) + 40,
@@ -587,28 +549,8 @@ class DashboardState extends ConsumerState<Dashboard>
                               ),
                             ),
                           ],
-                        )
-                      : Center(
-                          child: SizedBox(
-                            width: 600,
-                            height: 600,
-                            child: CustomPhoneVerification(
-                              onUserAuthenticated: (u) {
-                                setState(() {
-                                  user = u;
-                                  _showVerifier = false;
-                                  _showDashboard = true;
-                                });
-                                _getData(false);
-                              },
-                              onError: () {},
-                              onCancel: () {},
-                              onLanguageChosen: () {
-                                _setTexts();
-                              },
-                            ),
-                          ),
                         );
+
                 });
               },
             ),
@@ -627,7 +569,9 @@ class DashboardState extends ConsumerState<Dashboard>
                       },
                       onNavigateToMapViewer: () {
                         navigateToMapViewer(route!);
-                      },
+                      }, onColorChanged: (color , stringColor ) {
+                        _sendColorChange(color, stringColor);
+                    },
                     ))
                 : const SizedBox(),
           ],
@@ -732,6 +676,23 @@ class DashboardState extends ConsumerState<Dashboard>
         ),
       ),
     );
+  }
+  void _sendColorChange(Color color, stringColor) async {
+    pp('$mm send color change to : $color');
+    setState(() {
+      busy = true;
+    });
+    try {
+      selectedRoute = await dataApiDog.updateRouteColor(routeId: selectedRoute!.routeId!, color: stringColor);
+    } catch (e) {
+      pp(e);
+      if (mounted) {
+        showSnackBar(message: 'Colour update failed\n$e', context: context);
+      }
+    }
+    setState(() {
+      busy = false;
+    });
   }
 }
 

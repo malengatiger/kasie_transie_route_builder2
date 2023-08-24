@@ -6,11 +6,11 @@ import 'package:kasie_transie_library/utils/functions.dart';
 import 'package:kasie_transie_library/utils/initializer.dart';
 import 'package:kasie_transie_library/utils/navigator_utils.dart';
 import 'package:kasie_transie_library/utils/prefs.dart';
-import 'package:kasie_transie_route_builder/ui/assoc_routes.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:kasie_transie_library/data/schemas.dart' as lib;
 
 import '../intro/kasie_intro.dart';
+import 'assoc_routes.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage(

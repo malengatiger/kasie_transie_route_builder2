@@ -1,6 +1,7 @@
 
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart' as fb;
 import 'package:flutter/material.dart';
@@ -38,6 +39,19 @@ Future<void> main() async {
   if (me != null) {
     myPrettyJsonPrint(me!.toJson());
   }
+  FirebaseUIAuth.configureProviders([
+    EmailAuthProvider(),
+    PhoneAuthProvider(),
+    // GoogleProvider(clientId: GOOGLE_CLIENT_ID),
+    // AppleProvider(),
+    // FacebookProvider(clientId: FACEBOOK_CLIENT_ID),
+    // TwitterProvider(
+    //   apiKey: TWITTER_API_KEY,
+    //   apiSecretKey: TWITTER_API_SECRET_KEY,
+    //   redirectUri: TWITTER_REDIRECT_URI,
+    // ),
+  ]);
+
   runApp(const ProviderScope(child: KasieTransieApp()));
 }
 
