@@ -25,9 +25,11 @@ import 'package:kasie_transie_library/widgets/auth/cell_auth_signin.dart';
 import 'package:kasie_transie_library/widgets/dash_widgets/generic.dart';
 import 'package:kasie_transie_library/widgets/language_and_color_chooser.dart';
 import 'package:kasie_transie_library/widgets/route_info_widget.dart';
+import 'package:kasie_transie_library/widgets/timer_widget.dart';
 import 'package:kasie_transie_library/widgets/tiny_bloc.dart';
 import 'package:kasie_transie_route_builder2/ui/route_editor.dart';
 import 'package:kasie_transie_route_builder2/ui/route_list.dart';
+import 'package:realm_dart/realm.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import 'assoc_routes.dart';
@@ -118,7 +120,11 @@ class DashboardState extends ConsumerState<Dashboard>
       _navigateToPhoneAuth();
       return;
     }
-    fcmBloc.subscribeForRouteBuilder('RouteBuilder');
+    try {
+      fcmBloc.subscribeToTopics('RouteBuilder');
+    } catch (e) {
+      pp(e);
+    }
     _getData(false);
   }
 
@@ -153,8 +159,8 @@ class DashboardState extends ConsumerState<Dashboard>
         citiesTotal =
             await listApiDog.countCountryCities(user!.countryId!, false);
       }
-    } catch (e) {
-      pp(e);
+    } catch (e, stack) {
+      pp('$mm ERROR $e : $stack');
       if (mounted) {
         showSnackBar(
             padding: 16, message: 'Error getting data', context: context);
@@ -171,19 +177,20 @@ class DashboardState extends ConsumerState<Dashboard>
 
   Future _getRoutes(bool refresh) async {
     pp('$mm ... ambassador dashboard; getting routes ... refresh: $refresh');
-
-    if (refresh) {
-      final bags = await zipHandler.getRouteBags(associationId: user!.associationId!);
-      for (var bag in bags!.routeBags) {
-        routes.add(bag.route!);
-      }
-    } else {
-      routes = await listApiDog
-          .getRoutes(AssociationParameter(user!.associationId!, refresh));
+    try {
+      setState(() {
+        busy = true;
+      });
+      routes = await routesIsolate.getRoutes(user!.associationId!, refresh);
       pp('$mm ... ambassador dashboard; routes found by listApiDog: ${routes.length} ...');
       await _getLandmarks(refresh);
       await _countRoutePoints();
+    } catch (e, stack) {
+      pp('$e, $stack');
     }
+    setState(() {
+      busy = false;
+    });
     pp('$mm ... ambassador dashboard; routes: ${routes.length} ...');
   }
 
@@ -238,25 +245,34 @@ class DashboardState extends ConsumerState<Dashboard>
       sendingRouteUpdateMessage = true;
     });
     try {
-      await dataApiDog.sendRouteUpdateMessage(
-          route.associationId!, route.routeId!);
+      final req = lib.RouteUpdateRequest(ObjectId(),
+        associationId: route.associationId,
+        created: DateTime.now().toUtc().toIso8601String(),
+        routeId: route.routeId,
+        routeName: route.name,
+        userId: user!.userId,
+        userName: user!.name,
+      );
+      await dataApiDog.sendRouteUpdateMessage(req);
       pp('$mm onSendRouteUpdateMessage happened OK! ${E.nice}');
     } catch (e) {
       pp(e);
-      showToast(
-          duration: const Duration(seconds: 5),
-          padding: 20,
-          textStyle: myTextStyleMedium(context),
-          backgroundColor: Colors.amber,
-          message: 'Route Update message sent OK',
-          context: context);
+      if (mounted) {
+        showToast(
+                  duration: const Duration(seconds: 5),
+                  padding: 20,
+                  textStyle: myTextStyleMedium(context),
+                  backgroundColor: Colors.amber,
+                  message: 'Route Update message sent OK',
+                  context: context);
+      }
     }
     setState(() {
       sendingRouteUpdateMessage = false;
     });
   }
 
-  void calculateDistances(lib.Route route) async {
+  void _calculateDistances(lib.Route route) async {
     tinyBloc.setRouteId(route.routeId!);
     prefs.saveRoute(route);
 
@@ -277,7 +293,7 @@ class DashboardState extends ConsumerState<Dashboard>
     });
     pp('$mm Future.delayed(const Duration(seconds: 2) .....  ');
 
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 2));
     if (mounted) {
       navigateWithScale(
           LandmarkCreatorMap(
@@ -384,8 +400,7 @@ class DashboardState extends ConsumerState<Dashboard>
         appBar: AppBar(
           leading: const SizedBox(),
           centerTitle: centerTitle,
-          title: Text(
-            routesText == null ? 'Routes' : routesText!,
+          title: Text('Builder',
             style: myTextStyleMediumLargeWithColor(
                 context, Theme.of(context).primaryColor, fontSize),
           ),
@@ -491,7 +506,7 @@ class DashboardState extends ConsumerState<Dashboard>
                                   onSendRouteUpdateMessage(r);
                                 },
                                 onCalculateDistances: (r) {
-                                  calculateDistances(r);
+                                  _calculateDistances(r);
                                 },
                                 showRouteDetails: (r) {
                                   popupDetails(r);
@@ -541,7 +556,7 @@ class DashboardState extends ConsumerState<Dashboard>
                                   onSendRouteUpdateMessage(r);
                                 },
                                 onCalculateDistances: (r) {
-                                  calculateDistances(r);
+                                  _calculateDistances(r);
                                 },
                                 showRouteDetails: (r) {
                                   popupDetails(r);
@@ -574,7 +589,18 @@ class DashboardState extends ConsumerState<Dashboard>
                     },
                     ))
                 : const SizedBox(),
+            busy
+                ? const Positioned(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: TimerWidget(
+                        title: 'Data refreshing ...', isSmallSize: true),
+                  ),
+                ))
+                : gapH16,
           ],
+
         ),
         drawer: SizedBox(
           width: 400,

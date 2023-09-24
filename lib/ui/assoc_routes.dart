@@ -21,9 +21,11 @@ import 'package:kasie_transie_library/utils/navigator_utils.dart';
 import 'package:kasie_transie_library/utils/prefs.dart';
 import 'package:kasie_transie_library/utils/route_distance_calculator.dart';
 import 'package:kasie_transie_library/widgets/route_info_widget.dart';
+import 'package:kasie_transie_library/widgets/timer_widget.dart';
 import 'package:kasie_transie_library/widgets/tiny_bloc.dart';
 import 'package:kasie_transie_route_builder2/ui/route_editor.dart';
 import 'package:kasie_transie_route_builder2/ui/route_list.dart';
+import 'package:realm_dart/realm.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AssociationRoutes extends ConsumerStatefulWidget {
@@ -193,25 +195,28 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
   void navigateToRouteInfo(lib.Route route) {
     navigateWithScale(
         RouteInfoWidget(
-            routeId: route.routeId,
-            onClose: () {
-              Navigator.of(context).pop();
-            },
-            onNavigateToMapViewer: () {
-              navigateToMapViewer(selectedRoute!);
-            }, onColorChanged: (color , string ) {
-              _sendColorChange(color, string);
-        },),
+          routeId: route.routeId,
+          onClose: () {
+            Navigator.of(context).pop();
+          },
+          onNavigateToMapViewer: () {
+            navigateToMapViewer(selectedRoute!);
+          },
+          onColorChanged: (color, string) {
+            _sendColorChange(color, string);
+          },
+        ),
         context);
   }
-  
+
   void _sendColorChange(Color color, stringColor) async {
     pp('$mm ................... send color change to : $stringColor');
     setState(() {
       busy = true;
     });
     try {
-      selectedRoute = await dataApiDog.updateRouteColor(routeId: selectedRoute!.routeId!, color: stringColor);
+      selectedRoute = await dataApiDog.updateRouteColor(
+          routeId: selectedRoute!.routeId!, color: stringColor);
     } catch (e) {
       pp(e);
       if (mounted) {
@@ -231,10 +236,17 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
     setState(() {
       busy = true;
     });
-    user = await prefs.getUser();
-    if (user != null) {
-    routes = await listApiDog
-        .getRoutes(AssociationParameter(user!.associationId!, refresh));
+    try {
+      user = await prefs.getUser();
+      if (user != null) {
+        routes = await routesIsolate.getRoutes(user!.associationId!, refresh);
+      }
+    } catch (e, stackTrace) {
+      pp(stackTrace);
+      pp(e);
+      if (mounted) {
+        showSnackBar(message: 'Error: $e ', context: context);
+      }
     }
 
     setState(() {
@@ -264,24 +276,40 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
       sendingRouteUpdateMessage = true;
     });
     try {
-      await dataApiDog.sendRouteUpdateMessage(
-          route.associationId!, route.routeId!);
+      final req = lib.RouteUpdateRequest(ObjectId(),
+        associationId: route.associationId,
+        created: DateTime.now().toUtc().toIso8601String(),
+        routeId: route.routeId,
+        routeName: route.name,
+        userId: user!.userId,
+        userName: user!.name,
+      );
+      await dataApiDog.sendRouteUpdateMessage(req);
       pp('$mm onSendRouteUpdateMessage happened OK! ${E.nice}');
+      if (mounted) {
+          showOKToast(
+              duration: const Duration(seconds: 5),
+              message: 'Route update message sent', context: context);
+      }
     } catch (e) {
       pp(e);
       if (mounted) {
         showToast(
-                  duration: const Duration(seconds: 5),
-                  padding: 20,
-                  textStyle: myTextStyleMedium(context),
-                  backgroundColor: Colors.amber,
-                  message: 'Route Update message sent OK',
-                  context: context);
-      };
+            duration: const Duration(seconds: 5),
+            padding: 20,
+            textStyle: myTextStyleMedium(context),
+            backgroundColor: Colors.red,
+            message: 'Route Update message failed',
+            context: context);
+      }
+      ;
     }
-    setState(() {
-      sendingRouteUpdateMessage = false;
-    });
+
+    if (mounted) {
+      setState(() {
+            sendingRouteUpdateMessage = false;
+          });
+    }
   }
 
   void calculateDistances(lib.Route route) async {
@@ -461,7 +489,7 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                                       child: RouteInfoWidget(
                                         routeId: selectedRouteId,
                                         onClose: () {},
-                                        onColorChanged: (color , string ) {
+                                        onColorChanged: (color, string) {
                                           _sendColorChange(color, string);
                                         },
                                         onNavigateToMapViewer: () {
@@ -504,9 +532,10 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                                         onClose: () {},
                                         onNavigateToMapViewer: () {
                                           navigateToMapViewer(selectedRoute!);
-                                        }, onColorChanged: (color , string ) { 
+                                        },
+                                        onColorChanged: (color, string) {
                                           _sendColorChange(color, string);
-                                      },
+                                        },
                                       ),
                                     ),
                                   ],
@@ -517,17 +546,12 @@ class AssociationRoutesState extends ConsumerState<AssociationRoutes> {
                   ]);
                 }),
             busy
-                ? const Positioned(
+                ?  const Positioned(
                     child: Center(
-                    child: SizedBox(
-                      height: 32,
-                      width: 32,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 8,
-                        backgroundColor: Colors.amber,
-                      ),
-                    ),
-                  ))
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: TimerWidget(title: 'Loading ...', isSmallSize: true),
+                    )))
                 : const SizedBox(),
           ],
         ),

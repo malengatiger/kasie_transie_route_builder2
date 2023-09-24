@@ -1,8 +1,6 @@
 
 9
 	README.md,8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
-P
- kasie_transie_route_builder2.iml,c/7/c700d01f21e6a6a74bca0c2c68e3f17025cd4ce7
 U
 %.idea/runConfigurations/main_dart.xml,4/0/4075432bf12db9b56969c95a525e03d742f7e86d
 U
@@ -89,12 +87,8 @@ i
 -ios/Runner/Base.lproj/LaunchScreen.storyboard,7/c/7c920cd7e0758a0a5ddf4e64539d6c3bc47de503
 U
 %ios/Runner/Base.lproj/Main.storyboard,a/9/a9447b23bf39469cf6b0c9d663f74e171b0f4660
-L
-ios/Runner/AppDelegate.swift,8/4/84700e47abd691450c7da01b0aa772b1d41e4838
 S
 #ios/Runner/GoogleService-Info.plist,0/b/0b789df27cb2d2dad956de47ce5af443d6a6cb25
-E
-ios/Runner/Info.plist,7/0/7076b60f5e64ebfddc934ae3c4a7a7b87e461a6f
 S
 #ios/Runner/Runner-Bridging-Header.h,8/2/8220ac45b80647648436b79bfc43dab44e30fdde
 ~
@@ -117,8 +111,6 @@ M
 ios/firebase_app_id_file.json,a/0/a0799973e0bf1bad4e739e1320488659cd5da822
 ;
 ios/Podfile,5/1/510807778b56990ed3829592aea48d7a35b42809
-@
-ios/Podfile.lock,6/f/6fc5efc9eba1a38c53e9a557a6ebda2b662185e1
 I
 lib/generated/assets.dart,5/b/5b815209f3ac1d4b94a4211dbfb903428d4ed1c2
 b
@@ -193,5 +185,43 @@ F
 lib/ui/route_list.dart,6/2/626db3d78bc6bee1458234595e02f425fc9a584a
 W
 'lib/ui/route_detail_form_container.dart,d/b/db54982d7996660321c1e83ee812694413183740
+B
+android/.gitignore,f/1/f147f918c47edab19f40093aee6e93ae28629e1c
+C
+assets/l10n/zu.json,4/5/4596336cde542d8cb41696b323907b3743cd3e14
+C
+assets/l10n/af.json,d/5/d561064bc56d00f90fac4be2dd98ed7db721b097
 H
-lib/ui/route_editor.dart,4/5/45135857f3b06d454f0bba4affb3b5800b7c374f
+android/fastlane/Appfile,f/1/f17e8d99b1ca7641da2f439cf073dd3d3fda473c
+I
+android/fastlane/Fastfile,1/c/1c446dabad14fadfd63013960667e71b3f5123eb
+J
+android/fastlane/README.md,2/b/2b770c0283c182df38a403ecdf108df6b34aeed8
+K
+android/fastlane/report.xml,0/7/07549bddd7768a802eed623ea6fd7877be985f3a
+?
+android/Gemfile,3/a/3a9939ca8e8405b456702e749433f6a9bd470125
+D
+android/Gemfile.lock,a/a/aa9a1908ee5dd8c4b83a351b4b65e96e56b53bbb
+k
+;ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme,4/1/415f525025d2a854fce8d86570ada9443c42c5a6
+;
+ios/Gemfile,3/9/39f88f288bd13f54843f5f9af6cb42d714112c0b
+@
+ios/Gemfile.lock,a/3/a36abb303f5c4ee5dbf8eba12ff1399bc96adf53
+<
+Gemfile.lock,2/1/21fb5836b499a2be648386aac055d2e069160d6c
+<
+pubspec.yaml,e/8/e8e045469170189f1d6ef12576bd01af132b1018
+H
+lib/ui/landing_page.dart,1/e/1e9c69a1cf5510467046222883bb0a3b57b4cb0a
+H
+android/app/build.gradle,5/9/594ba479000e0bb5513707b709ad1cd52da9063a
+E
+ios/Runner/Info.plist,7/0/7076b60f5e64ebfddc934ae3c4a7a7b87e461a6f
+L
+ios/Runner/AppDelegate.swift,8/4/84700e47abd691450c7da01b0aa772b1d41e4838
+7
+Gemfile,d/e/de3150c01c3a946a6168173c4116741379fe3579
+=
+lib/main.dart,a/8/a8ea5273939a12e805641671b79e5eaeaab1e231

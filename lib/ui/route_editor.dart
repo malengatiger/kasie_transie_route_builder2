@@ -6,6 +6,7 @@ import 'package:kasie_transie_library/bloc/data_api_dog.dart';
 import 'package:kasie_transie_library/bloc/list_api_dog.dart';
 import 'package:kasie_transie_library/data/schemas.dart' as lib;
 import 'package:kasie_transie_library/data/schemas.dart';
+import 'package:kasie_transie_library/isolates/routes_isolate.dart';
 import 'package:kasie_transie_library/l10n/translation_handler.dart';
 import 'package:kasie_transie_library/maps/route_creator_map2.dart';
 import 'package:kasie_transie_library/providers/kasie_providers.dart';
@@ -19,6 +20,7 @@ import 'package:kasie_transie_library/utils/prefs.dart';
 import 'package:kasie_transie_library/widgets/city_selection.dart';
 import 'package:kasie_transie_library/widgets/route_list_minimum.dart';
 import 'package:kasie_transie_library/widgets/searching_cities_busy.dart';
+import 'package:kasie_transie_library/widgets/timer_widget.dart';
 import 'package:kasie_transie_route_builder2/ui/route_detail_form_container.dart';
 import 'package:realm/realm.dart';
 import 'package:responsive_builder/responsive_builder.dart' as responsive;
@@ -26,7 +28,11 @@ import 'package:uuid/uuid.dart' as uu;
 
 class RouteEditor extends ConsumerStatefulWidget {
   const RouteEditor(
-      {Key? key, this.route, required this.dataApiDog, required this.prefs, required this.association})
+      {Key? key,
+      this.route,
+      required this.dataApiDog,
+      required this.prefs,
+      required this.association})
       : super(key: key);
 
   final lib.Route? route;
@@ -127,22 +133,14 @@ class RouteEditorState extends ConsumerState<RouteEditor>
   }
 
   void _getRoutes() async {
-    // final m = ref.watch(
-    //     routesProvider(AssociationParameter(user!.associationId!, false)));
-    pp('$mm _getRoutes ...............');
+        pp('$mm _getRoutes ...............');
 
-    final x = await listApiDog
-        .getRoutes(AssociationParameter(widget.association.associationId!, false));
+    final x =
+        await routesIsolate.getRoutes(widget.association.associationId!, false);
     setState(() {
       routes = x;
     });
     pp('$mm _getRoutes ............... routes: ${routes.length}');
-
-    // if (m.hasValue) {
-    //   pp('$mm routesProvider has done it again! ❤️${m.value!.length} routes delivered');
-    //   routes = m.value!;
-    //   setState(() {});
-    // }
   }
 
   void _getUser() async {
@@ -328,10 +326,12 @@ class RouteEditorState extends ConsumerState<RouteEditor>
       }
     } catch (e) {
       pp(e);
-      showSnackBar(
-          duration: const Duration(seconds: 15),
-          message: 'Route failed: $e',
-          context: context);
+      if (mounted) {
+        showSnackBar(
+            duration: const Duration(seconds: 15),
+            message: 'Route failed: $e',
+            context: context);
+      }
     }
     setState(() {
       sending = false;
@@ -384,19 +384,28 @@ class RouteEditorState extends ConsumerState<RouteEditor>
     });
     try {
       if (widget.route != null) {
-        await dataApiDog.sendRouteUpdateMessage(
-            widget.route!.associationId!, widget.route!.routeId!);
+        final req = lib.RouteUpdateRequest(ObjectId(),
+          associationId: widget.route!.associationId,
+          created: DateTime.now().toUtc().toIso8601String(),
+          routeId: widget.route!.routeId,
+          routeName: widget.route!.name,
+          userId: user!.userId,
+          userName: user!.name,
+        );
+        await dataApiDog.sendRouteUpdateMessage(req);
         pp('$mm onSendRouteUpdateMessage happened OK! ${E.nice}');
       }
     } catch (e) {
       pp(e);
-      showToast(
-          duration: const Duration(seconds: 5),
-          padding: 20,
-          textStyle: myTextStyleMedium(context),
-          backgroundColor: Colors.amber,
-          message: 'Route Update message sent OK',
-          context: context);
+      if (mounted) {
+        showToast(
+                  duration: const Duration(seconds: 5),
+                  padding: 20,
+                  textStyle: myTextStyleMedium(context),
+                  backgroundColor: Colors.amber,
+                  message: 'Route Update message sent OK',
+                  context: context);
+      }
     }
     setState(() {
       sendingRouteUpdateMessage = false;
@@ -427,11 +436,9 @@ class RouteEditorState extends ConsumerState<RouteEditor>
             mobile: (ctx) {
               return busy
                   ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: SearchingCitiesBusy(
-                        searchingCities: searchingCities,
-                      ),
-                  )
+                      padding: const EdgeInsets.all(20.0),
+                      child: Center(child: TimerWidget(title: searchingCities, isSmallSize: true)),
+                    )
                   : sending
                       ? const Center(
                           child: CircularProgressIndicator(
@@ -521,7 +528,10 @@ class RouteEditorState extends ConsumerState<RouteEditor>
                             if (snapshot.hasData) {
                               routes = snapshot.data!;
                             }
-                            return  RouteListMinimum(onRoutePicked: (route ) {  }, association: widget.association,);
+                            return RouteListMinimum(
+                              onRoutePicked: (route) {},
+                              association: widget.association,
+                            );
                           }),
                     ),
                   ],
@@ -557,7 +567,6 @@ class RouteEditorState extends ConsumerState<RouteEditor>
                     ),
                   ))
               : const SizedBox(),
-
         ],
       ),
     ));
